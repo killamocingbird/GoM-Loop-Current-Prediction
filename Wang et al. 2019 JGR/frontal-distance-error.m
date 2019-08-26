@@ -1,16 +1,8 @@
-
-%{
-
-This code stub calculates the frontal distance performance
-measure as laid out by Oey et al. (reference in paper)
-
-%}
-
 path = 'D:\MATLAB\Project 3\Run4\';
-% path2 = 'D:\MATLAB\Project 3\Project 3.1\Run3\';
+path2 = 'D:\MATLAB\Project 3\Project 3.1\Run3\';
 dataPath = 'D:\MATLAB\Project 3\Run4\data.mat';
 
-range = 0:53;
+range = 0:48;
 MxRegion = 201:400;
 MyRegion = 101:300;
 % xRegion = 1:541;
@@ -18,8 +10,20 @@ MyRegion = 101:300;
 PxRegion = 101:400;
 PyRegion = 101:300;
 
+% path = 'D:\MATLAB\Project 3\AVISO Run1\';
+% dataPath = 'D:\MATLAB\Project 3\AVISO Run1\data.mat';
+
+% range = 0:64;
+% MxRegion = 33:64;
+% MyRegion = 17:48;
+% PxRegion = 33:64;
+% PyRegion = 17:48;
+
 xRefPnts = [100, 150, 200, 250, 200, 250, 300];
+% yRefPnts = [202, 202, 202, 202, 227, 227, 227];
 yRefPnts = [234, 234, 234, 234, 268, 268, 268];
+% xRefPnts = [16, 24, 32, 40, 32, 40, 48];
+% yRefPnts = [28, 28, 28, 28, 44, 44, 44];
 
 %Load in data
 load(dataPath);
@@ -27,41 +31,77 @@ numTimeStepsTrain = floor(0.9*numel(data));
 
 %Model performance measures
 Mrmses = zeros(20, 1);
-Mccs = zeros(20, 1);
+% Mccs = zeros(20, 1);
+
+NMrmses = zeros(20, 1);
+% NMccs = zeros(20, 1);
 
 %Persistence performance measures
 Prmses = zeros(20, 1);
-Pccs = zeros(20, 1);
+% Pccs = zeros(20, 1);
 
 counter = 0;
 for ii = range
     fprintf("Iteration %d: ", ii);
     %Load in prediction
     load(strcat(path, num2str(ii), '\preds.mat'));
+    load(strcat(path2, num2str(ii), '\preds.mat'));
     %Load in persistence
     Pprediction = data{numTimeStepsTrain + ii};
     
     %Load in actual
     tempReal = data(numTimeStepsTrain + 1 + ii:numTimeStepsTrain + 20 + ii);
-        
+    
+    
+    
     %Loop through
     for jj = 1:20
         tempMat = tempReal{jj};
         %Model calculations
-        MCC = cc(tempMat(MxRegion, MyRegion), PredReconstruction(MxRegion, MyRegion, jj));
-        MRMSE = rmse(tempMat(MxRegion, MyRegion), PredReconstruction(MxRegion, MyRegion, jj));
+%          MCC = cc(tempMat(MxRegion, MyRegion), PredReconstruction(MxRegion, MyRegion, jj));
+%          NMCC = cc(tempMat(MxRegion, MyRegion), PredReconstructionFull(MxRegion, MyRegion, jj));
+%          MRMSE = rmse(tempMat(MxRegion, MyRegion), PredReconstruction(MxRegion, MyRegion, jj));
+%          NMRMSE = rmse(tempMat(MxRegion, MyRegion), PredReconstructionFull(MxRegion, MyRegion, jj));
         
-        Mccs(jj) = Mccs(jj) + MCC;
-        MCCS(ii + 1, jj) = MCC;
+        distsReal = zeros(size(xRefPnts));
+        Mdists = zeros(size(xRefPnts));
+        Pdists = zeros(size(xRefPnts));
+        NMdists = zeros(size(xRefPnts));
+        RealC = contourc(tempMat, [0.45 0.45]);
+        MC = contourc(PredReconstruction(:,:,jj), [0.45 0.45]);
+        PC = contourc(Pprediction, [0.45 0.45]);
+        NMC = contourc(PredReconstructionFull(:,:,jj), [0.45 0.45]);
+        for kk = 1:numel(xRefPnts)
+            refPnt = [xRefPnts(kk) yRefPnts(kk)];
+            distsReal(kk) = disCon(refPnt, RealC, 0.45);
+            Mdists(kk) = disCon(refPnt, MC, 0.45);
+            Pdists(kk) = disCon(refPnt, PC, 0.45);
+            NMdists(kk) = disCon(refPnt, NMC, 0.45);
+        end
+        clear refPnt;
+        
+        ME = Mdists - distsReal;
+        PE = Pdists - distsReal;
+        NME = NMdists - distsReal;
+%         MCC = cc(distsReal, Mdists);
+        MRMSE = rmse(distsReal, Mdists);
+%         PCC = cc(distsReal, Pdists);
+        PRMSE = rmse(distsReal, Pdists);
+        NMRMSE = rmse(distsReal, NMdists);
+        
+
+%         Mccs(jj) = Mccs(jj) + MCC;
         Mrmses(jj) = Mrmses(jj) + MRMSE;
         MRMSES(ii + 1, jj) = MRMSE;
-     
+%         NMccs(jj) = NMccs(jj) + NMCC;
+        NMrmses(jj) = NMrmses(jj) + NMRMSE;
+        NMRMSES(ii + 1, jj) = NMRMSE;
+        
         %Persistence calculations
-        PCC = cc(tempMat(PxRegion, PyRegion), Pprediction(PxRegion, PyRegion));
-        PRMSE = rmse(tempMat(PxRegion, PyRegion), Pprediction(PxRegion, PyRegion));
+%         PCC = cc(tempMat(PxRegion, PyRegion), Pprediction(PxRegion, PyRegion));
+%         PRMSE = rmse(tempMat(PxRegion, PyRegion), Pprediction(PxRegion, PyRegion));
 
-        Pccs(jj) = Pccs(jj) + PCC;
-        PCCS(ii + 1, jj) = PCC;
+%         Pccs(jj) = Pccs(jj) + PCC;
         Prmses(jj) = Prmses(jj) + PRMSE;
         PRMSES(ii + 1, jj) = PRMSE;
         
@@ -72,68 +112,65 @@ for ii = range
     fprintf("Done\n");
 end
 
-Mccs = reshape(Mccs / counter, [1 20]);
-MccsSTD = std(MCCS, 0, 1);
-Mrmses = reshape(Mrmses / counter, [1 20]);
+% Mccs = Mccs / counter;
+Mrmses = Mrmses / counter;
 MrmsesSTD = std(MRMSES, 0, 1);
 
-Pccs = reshape(Pccs / counter, [1 20]);
-PccsSTD = std(PCCS, 0, 1);
-Prmses = reshape(Prmses / counter, [1 20]);
+% NMccs = NMccs / counter;
+NMrmses = NMrmses / counter;
+MNrmsesSTD = std(NMRMSES, 0, 1);
+
+% Pccs = Pccs / counter;
+Prmses = Prmses / counter;
 PrmsesSTD = std(PRMSES, 0, 1);
 
+Mrmses = idx2km(Mrmses);
+Prmses = idx2km(Prmses);
+NMrmses = idx2km(NMrmses);
 
 figure
-yyaxis left
+% yyaxis left
+% hold on
+% plot(NMccs, '--*')
+% plot(Mccs, '-*')
+% plot(Pccs, '--*')
+
+% ylim([0 1])
+% yyaxis right
 hold on
-ylim([0 1])
-ylabel('Correlation Coefficient (CC)')
-p1 = plot_areaerrorbar(Mccs, MccsSTD);
+% plot(Mrmses, '-*', 'LineWidth', 2)
+% plot(NMrmses, '-*', 'LineWidth', 2)
+% plot(Prmses, '--*', 'LineWidth', 2)
 
-        options2.handle     = figure(1);
-        options2.color_area = [128 193 219]./255;    % Blue theme
-        options2.color_line = [ 52 148 186]./255;
-        %options.color_area = [243 169 114]./255;    % Orange theme
-        %options.color_line = [236 112  22]./255;
-        options2.alpha      = 0.5;
-        options2.line_width = 2;
-        options2.error      = 'std';
-        options2.type = '--*';
+p1 = plot_areaerrorbar(reshape(Mrmses, [1 20]), MrmsesSTD);
 
-p2 = plot_areaerrorbar(Pccs, PccsSTD, options2);
+options.handle     = figure(1);
+options.color_area = [243 169 114]./255;    % Orange theme
+options.color_line = [236 112  22]./255;
+options.alpha      = 0.5;
+options.line_width = 2;
+options.error      = 'std';
+options.type = '-*';
 
-yyaxis right
-hold on
-ylim([0 1])
-ylabel('Root-Mean Square Error (RMSE) in kilometers (km)')
+p2 = plot_areaerrorbar(reshape(NMrmses, [1 20]), PrmsesSTD, options);
 
-        options3.handle     = figure(1);
-        options3.color_area = [243 169 114]./255;    % Orange theme
-        options3.color_line = [236 112  22]./255;
-        options3.alpha      = 0.5;
-        options3.line_width = 2;
-        options3.error      = 'std';
-        options3.type = '-*';
-
-p3 = plot_areaerrorbar(Mrmses, MrmsesSTD, options3);
-
-        options4.handle     = figure(1);
-        options4.color_area = [243 169 114]./255;    % Orange theme
-        options4.color_line = [236 112  22]./255;
-        options4.alpha      = 0.5;
-        options4.line_width = 2;
-        options4.error      = 'std';
-        options4.type = '--*';
-
-p4 = plot_areaerrorbar(Prmses, PrmsesSTD, options4);
-
-xlim([1 20])
+ylim([0 100])
+xlim([1 10])
 grid on
 grid minor
-xlabel('Prediction Week')
-legend([p1 p2 p3 p4], 'Model CC', 'Persistence CC', 'Model RMSE', 'Persistence RMSE')
+% yyaxis left
+% legend('Model CC','Persistence CC', 'Model RMSE', 'Persistence RMSE')
+% legend('Nonoverlapping RMSE', 'Overlapping RMSE', 'Persistence RMSE')
+legend([p1 p2], 'Nonoverlapping RMSE', 'Overlapping RMSE')
+% legend('Nonoverlapping RMSE', 'Overlapping RMSE', 'Persistence RMSE')
+% set(findall(gca, 'Type', 'Line'),'LineWidth',2);
 set(gca, 'FontSize', 18)
+% ylabel('Correlation Coefficient (CC)')
+% yyaxis right
+ylabel('Root-Mean Square Error (RMSE) in kilometers (m)')
+xlabel('Prediction Week')
 box on
+
 
 
 function y = rmse(a, b)
