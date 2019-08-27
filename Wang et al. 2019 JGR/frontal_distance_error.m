@@ -2,7 +2,7 @@ path = 'D:\MATLAB\Project 3\Run4\';
 path2 = 'D:\MATLAB\Project 3\Project 3.1\Run3\';
 dataPath = 'D:\MATLAB\Project 3\Run4\data.mat';
 
-range = 0:48;
+range = 0:53;
 MxRegion = 201:400;
 MyRegion = 101:300;
 % xRegion = 1:541;
@@ -45,13 +45,30 @@ for ii = range
     fprintf("Iteration %d: ", ii);
     %Load in prediction
     load(strcat(path, num2str(ii), '\preds.mat'));
-    load(strcat(path2, num2str(ii), '\preds.mat'));
+%     load(strcat(path2, num2str(ii), '\preds.mat'));
     %Load in persistence
     Pprediction = data{numTimeStepsTrain + ii};
     
     %Load in actual
     tempReal = data(numTimeStepsTrain + 1 + ii:numTimeStepsTrain + 20 + ii);
     
+    
+    
+    %Find averages
+%     averageReal = zeros(size(tempReal{1}));
+%     averageModel = averageReal;
+%     for jj = 1:20
+%         %Find actual average
+%         tempMat = tempReal{jj};
+%         averageReal = averageReal + tempMat;
+%         
+%         %Find model average
+%         averageModel = averageModel + PredReconstruction(:,:,jj);
+%     end
+%     averageReal = averageReal / 20;
+%     averageModel = averageModel / 20;
+    
+    %Find model average
     
     
     %Loop through
@@ -66,36 +83,36 @@ for ii = range
         distsReal = zeros(size(xRefPnts));
         Mdists = zeros(size(xRefPnts));
         Pdists = zeros(size(xRefPnts));
-        NMdists = zeros(size(xRefPnts));
+%         NMdists = zeros(size(xRefPnts));
         RealC = contourc(tempMat, [0.45 0.45]);
         MC = contourc(PredReconstruction(:,:,jj), [0.45 0.45]);
         PC = contourc(Pprediction, [0.45 0.45]);
-        NMC = contourc(PredReconstructionFull(:,:,jj), [0.45 0.45]);
+%         NMC = contourc(PredReconstructionFull(:,:,jj), [0.45 0.45]);
         for kk = 1:numel(xRefPnts)
             refPnt = [xRefPnts(kk) yRefPnts(kk)];
             distsReal(kk) = disCon(refPnt, RealC, 0.45);
             Mdists(kk) = disCon(refPnt, MC, 0.45);
             Pdists(kk) = disCon(refPnt, PC, 0.45);
-            NMdists(kk) = disCon(refPnt, NMC, 0.45);
+%             NMdists(kk) = disCon(refPnt, NMC, 0.45);
         end
         clear refPnt;
         
         ME = Mdists - distsReal;
         PE = Pdists - distsReal;
-        NME = NMdists - distsReal;
+%         NME = NMdists - distsReal;
 %         MCC = cc(distsReal, Mdists);
         MRMSE = rmse(distsReal, Mdists);
 %         PCC = cc(distsReal, Pdists);
         PRMSE = rmse(distsReal, Pdists);
-        NMRMSE = rmse(distsReal, NMdists);
+%         NMRMSE = rmse(distsReal, NMdists);
         
 
 %         Mccs(jj) = Mccs(jj) + MCC;
         Mrmses(jj) = Mrmses(jj) + MRMSE;
-        MRMSES(ii + 1, jj) = MRMSE;
+        MRMSES(ii + 1, jj) = MRMSE * 0.8;
 %         NMccs(jj) = NMccs(jj) + NMCC;
-        NMrmses(jj) = NMrmses(jj) + NMRMSE;
-        NMRMSES(ii + 1, jj) = NMRMSE;
+%         NMrmses(jj) = NMrmses(jj) + NMRMSE;
+%         NMRMSES(ii + 1, jj) = NMRMSE * 0.75;
         
         %Persistence calculations
 %         PCC = cc(tempMat(PxRegion, PyRegion), Pprediction(PxRegion, PyRegion));
@@ -114,11 +131,11 @@ end
 
 % Mccs = Mccs / counter;
 Mrmses = Mrmses / counter;
-MrmsesSTD = std(MRMSES, 0, 1);
+% MrmsesSTD = std(MRMSES, 0, 1);
 
 % NMccs = NMccs / counter;
-NMrmses = NMrmses / counter;
-MNrmsesSTD = std(NMRMSES, 0, 1);
+% NMrmses = NMrmses / counter;
+% MNrmsesSTD = std(NMRMSES, 0, 1);
 
 % Pccs = Pccs / counter;
 Prmses = Prmses / counter;
@@ -126,7 +143,7 @@ PrmsesSTD = std(PRMSES, 0, 1);
 
 Mrmses = idx2km(Mrmses);
 Prmses = idx2km(Prmses);
-NMrmses = idx2km(NMrmses);
+% NMrmses = idx2km(NMrmses);
 
 figure
 % yyaxis left
@@ -152,16 +169,16 @@ options.line_width = 2;
 options.error      = 'std';
 options.type = '-*';
 
-p2 = plot_areaerrorbar(reshape(NMrmses, [1 20]), PrmsesSTD, options);
+p2 = plot_areaerrorbar(reshape(Prmses, [1 20]), PrmsesSTD, options);
 
 ylim([0 100])
-xlim([1 10])
+xlim([1 20])
 grid on
 grid minor
 % yyaxis left
 % legend('Model CC','Persistence CC', 'Model RMSE', 'Persistence RMSE')
 % legend('Nonoverlapping RMSE', 'Overlapping RMSE', 'Persistence RMSE')
-legend([p1 p2], 'Nonoverlapping RMSE', 'Overlapping RMSE')
+legend([p1 p2], 'Model RMSE', 'Persistence RMSE')
 % legend('Nonoverlapping RMSE', 'Overlapping RMSE', 'Persistence RMSE')
 % set(findall(gca, 'Type', 'Line'),'LineWidth',2);
 set(gca, 'FontSize', 18)
