@@ -107,12 +107,7 @@ for ii = range
 %         NMRMSE = rmse(distsReal, NMdists);
         
 
-%         Mccs(jj) = Mccs(jj) + MCC;
         Mrmses(jj) = Mrmses(jj) + MRMSE;
-        MRMSES(ii + 1, jj) = MRMSE * 0.8;
-%         NMccs(jj) = NMccs(jj) + NMCC;
-%         NMrmses(jj) = NMrmses(jj) + NMRMSE;
-%         NMRMSES(ii + 1, jj) = NMRMSE * 0.75;
         
         %Persistence calculations
 %         PCC = cc(tempMat(PxRegion, PyRegion), Pprediction(PxRegion, PyRegion));
