@@ -4,6 +4,7 @@ from tensorflow.keras import layers
 import numpy as np
 
 import params
+import util
 
 def get_model():
     seq = keras.models.Sequential()
@@ -21,7 +22,7 @@ def get_model():
         else:
             #Conv3D Layer
             seq.add(layers.Conv3D(filters=params.NUM_FILTERS[i], kernel_size=params.KERNEL_SIZES[i],
-                                  padding=params.PADDING, data_format=params.DATA_FORMAT))
+                                  activation='tanh', padding=params.PADDING, data_format=params.DATA_FORMAT))
     
     #Compile
     seq.compile(loss=params.LOSS, optimizer=params.OPTIM)
@@ -43,23 +44,25 @@ def train(seq, xtrain, ytrain, epochs, verbose=True, reset_states=True):
             
     if verbose: print("DONE")
     
-def predict_window(seq, xtrain, ytrain, xval, yval, window_length, update_epochs):
+def predict_window(seq, xtrain, ytrain, xval, yval, nan_map, window_length, update_epochs, verbose=False):
     x_hat = xtrain
     y_hat = ytrain
     pred = np.zeros((window_length, 1, 541, 385, xtrain.shape[4]))
     for i in range(window_length):
+        if verbose: print("Week %d..." % (i + 1))
         #Update state
-        train(x_hat, y_hat, update_epochs, verbose=False, reset_state=False)
+        train(seq, x_hat, y_hat, update_epochs, verbose=False, reset_states=False)
         #Predict
-        cur_pred = seq.predict(xval[i:i+1])
+        cur_pred = seq.predict(y_hat[-1:])
+        cur_pred = util.reset_nan_values(cur_pred, nan_map)
         pred[i] = cur_pred[0]
         #Dynamically add onto x_hat and y_hat
-        x_hat = np.concatenate((x_hat, xval[i:i+1]))
+        x_hat = np.concatenate((x_hat, yval[-1:]))
         y_hat = np.concatenate((y_hat, cur_pred))
         #Reset state for next prediction
         seq.reset_states()
     #Find RMSE
-    errors = (((pred - yval[:window_length])**2).mean(1, 2, 3, 4))**(0.5)
+    errors = (((pred - yval[:window_length])**2).mean((1, 2, 3, 4)))**(0.5)
     return (pred, errors)
         
             
